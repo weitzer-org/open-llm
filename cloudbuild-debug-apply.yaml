@@ -1,0 +1,30 @@
+steps:
+  # 1. Run targeted terraform apply and capture standard output/errors safely
+  - name: 'hashicorp/terraform:1.9.3'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        mkdir -p /workspace/logs
+        cd terraform
+        echo "=== TERRAFORM INIT ===" > /workspace/logs/tf_log.txt
+        terraform init -input=false -no-color >> /workspace/logs/tf_log.txt 2>&1
+        INIT_CODE=$$?
+        echo "Init Exit Code: $$INIT_CODE" >> /workspace/logs/tf_log.txt
+        
+        if [ $$INIT_CODE -eq 0 ]; then
+          echo "\n=== TERRAFORM TARGETED APPLY ===" >> /workspace/logs/tf_log.txt
+          terraform apply -target=google_cloud_run_v2_service.vllm -auto-approve -var="project_id=quacktastic-waffle" -input=false -no-color >> /workspace/logs/tf_log.txt 2>&1
+          APPLY_CODE=$$?
+          echo "Apply Exit Code: $$APPLY_CODE" >> /workspace/logs/tf_log.txt
+        else
+          echo "\n=== SKIPPING APPLY DUE TO INIT FAILURE ===" >> /workspace/logs/tf_log.txt
+        fi
+
+  # 2. Upload the logs regardless of step outcome
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        gcloud storage cp /workspace/logs/tf_log.txt gs://quacktastic-waffle_cloudbuild/logs/tf_log.txt

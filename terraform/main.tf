@@ -24,7 +24,6 @@ locals {
     "developerconnect.googleapis.com",
     "secretmanager.googleapis.com",
     "storage.googleapis.com",
-    "vpcaccess.googleapis.com",
     "iam.googleapis.com"
   ]
 }
