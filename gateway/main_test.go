@@ -97,32 +97,65 @@ func TestAuthMiddleware(t *testing.T) {
 	tests := []struct {
 		name           string
 		authHeader     string
+		xAPIKey        string
 		expectedStatus int
 		containsError  string
 	}{
 		{
-			name:           "Missing Authorization Header",
+			name:           "Missing Authentication Credentials",
 			authHeader:     "",
+			xAPIKey:        "",
 			expectedStatus: http.StatusUnauthorized,
-			containsError:  "Missing Authorization header",
+			containsError:  "Missing authentication credentials",
 		},
 		{
 			name:           "Malformed Token Format",
 			authHeader:     "Basic dXNlcjpwYXNz",
+			xAPIKey:        "",
 			expectedStatus: http.StatusUnauthorized,
 			containsError:  "Malformed Authorization token",
 		},
 		{
 			name:           "Incorrect Secret Key",
 			authHeader:     "Bearer wrong-token-123",
+			xAPIKey:        "",
 			expectedStatus: http.StatusUnauthorized,
 			containsError:  "Invalid API secret token",
 		},
 		{
 			name:           "Valid Pre-Shared Key",
 			authHeader:     "Bearer super-secret-gate-key",
+			xAPIKey:        "",
 			expectedStatus: http.StatusOK,
 			containsError:  "",
+		},
+		{
+			name:           "Valid X-API-Key Header",
+			authHeader:     "",
+			xAPIKey:        "super-secret-gate-key",
+			expectedStatus: http.StatusOK,
+			containsError:  "",
+		},
+		{
+			name:           "Incorrect X-API-Key Header",
+			authHeader:     "",
+			xAPIKey:        "wrong-token-123",
+			expectedStatus: http.StatusUnauthorized,
+			containsError:  "Invalid API secret token",
+		},
+		{
+			name:           "X-API-Key Precedence (Correct X-API-Key, Wrong Bearer)",
+			authHeader:     "Bearer wrong-token-123",
+			xAPIKey:        "super-secret-gate-key",
+			expectedStatus: http.StatusOK,
+			containsError:  "",
+		},
+		{
+			name:           "X-API-Key Precedence (Wrong X-API-Key, Correct Bearer)",
+			authHeader:     "Bearer super-secret-gate-key",
+			xAPIKey:        "wrong-token-123",
+			expectedStatus: http.StatusUnauthorized,
+			containsError:  "Invalid API secret token",
 		},
 	}
 
@@ -131,6 +164,9 @@ func TestAuthMiddleware(t *testing.T) {
 			req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
 			if tt.authHeader != "" {
 				req.Header.Set("Authorization", tt.authHeader)
+			}
+			if tt.xAPIKey != "" {
+				req.Header.Set("X-API-Key", tt.xAPIKey)
 			}
 			w := httptest.NewRecorder()
 

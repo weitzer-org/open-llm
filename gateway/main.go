@@ -85,19 +85,24 @@ func AuthMiddleware(authSecret string, next http.Handler) http.Handler {
 			return
 		}
 
+		var token string
+		xAPIKey := r.Header.Get("X-API-Key")
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			writeAuthError(w, "Missing Authorization header. Please specify the Bearer token.")
+
+		if xAPIKey != "" {
+			token = xAPIKey
+		} else if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+				writeAuthError(w, "Malformed Authorization token. Expected format: 'Bearer <token>'.")
+				return
+			}
+			token = parts[1]
+		} else {
+			writeAuthError(w, "Missing authentication credentials. Please specify the Bearer token in the 'Authorization' header or use 'X-API-Key'.")
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			writeAuthError(w, "Malformed Authorization token. Expected format: 'Bearer <token>'.")
-			return
-		}
-
-		token := parts[1]
 		if token != authSecret {
 			writeAuthError(w, "Invalid API secret token provided.")
 			return

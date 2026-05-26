@@ -171,6 +171,24 @@ func TestE2EGatewayFlow(t *testing.T) {
 	if accumulatedText != expectedText {
 		t.Errorf("Expected final accumulated text to be '%s', got '%s'", expectedText, accumulatedText)
 	}
+
+	// ========================================================================
+	// E2E Task E: Verify authenticated completions via custom X-API-Key header
+	// ========================================================================
+	reqXAPIKey, _ := http.NewRequest("POST", gatewayServer.URL+"/v1/chat/completions", strings.NewReader(`{"model":"active-model","messages":[{"role":"user","content":"Ping"}],"stream":false}`))
+	reqXAPIKey.Header.Set("Content-Type", "application/json")
+	reqXAPIKey.Header.Set("X-API-Key", authSecret)
+
+	respXAPIKey, err := client.Do(reqXAPIKey)
+	if err != nil {
+		t.Fatalf("Failed POST request completions with X-API-Key: %v", err)
+	}
+	defer respXAPIKey.Body.Close()
+
+	if respXAPIKey.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(respXAPIKey.Body)
+		t.Fatalf("Expected successful status 200 via X-API-Key, got %d. Body: %s", respXAPIKey.StatusCode, string(body))
+	}
 }
 
 func TestE2EGatewayV2Fallback(t *testing.T) {
