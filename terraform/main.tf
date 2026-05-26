@@ -173,12 +173,13 @@ resource "google_artifact_registry_repository" "repo" {
 
 # A. Scale-To-Zero vLLM Inference Engine (GPU Service, Internal Only)
 resource "google_cloud_run_v2_service" "vllm" {
-  project      = var.project_id
-  name         = "open-llm-vllm"
-  location     = var.region
-  ingress      = "INGRESS_TRAFFIC_INTERNAL_ONLY"
-  launch_stage = "BETA"
-  depends_on   = [google_project_service.apis["run.googleapis.com"], google_storage_bucket_iam_member.vllm_storage_viewer]
+  project             = var.project_id
+  name                = "open-llm-vllm"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  launch_stage        = "BETA"
+  deletion_protection = false
+  depends_on          = [google_project_service.apis["run.googleapis.com"], google_storage_bucket_iam_member.vllm_storage_viewer]
 
   template {
     service_account               = google_service_account.vllm_sa.email
@@ -258,11 +259,12 @@ resource "google_cloud_run_v2_service_iam_member" "vllm_unauthenticated" {
 
 # B. Go API Gateway & Dashboard Console (CPU Service, Publicly Accessible)
 resource "google_cloud_run_v2_service" "gateway" {
-  project    = var.project_id
-  name       = "open-llm-gateway"
-  location   = var.region
-  ingress    = "INGRESS_TRAFFIC_ALL"
-  depends_on = [google_project_service.apis["run.googleapis.com"], google_secret_manager_secret_iam_member.gateway_secret_accessor]
+  project             = var.project_id
+  name                = "open-llm-gateway"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
+  depends_on          = [google_project_service.apis["run.googleapis.com"], google_secret_manager_secret_iam_member.gateway_secret_accessor]
 
   template {
     service_account = google_service_account.gateway_sa.email
