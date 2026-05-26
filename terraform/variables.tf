@@ -43,7 +43,7 @@ variable "vpc_subnetwork" {
 variable "active_model_path" {
   type        = string
   description = "Relative path within GCS FUSE mount bucket representing active safetensors weights (e.g. qwen-2.5-7b-instruct)"
-  default     = "qwen-2.5-7b-instruct-fp8"
+  default     = "qwen-2.5-7b-instruct-awq"
 }
 
 variable "gateway_image" {
