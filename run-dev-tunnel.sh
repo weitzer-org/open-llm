@@ -48,8 +48,8 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # 0. Validate and ensure the secure Cloud Run Proxy package dependencies are present
-if ! dpkg -l google-cloud-cli-cloud-run-proxy &>/dev/null && gcloud beta run services proxy --help 2>&1 | grep -q "requires the \`cloud-run-proxy\` component"; then
-  echo "📦 The secure GCloud Cloud Run Proxy component is missing on this system!"
+if ! dpkg -l google-cloud-cli-cloud-run-proxy &>/dev/null; then
+  echo "📦 The secure GCloud Cloud Run Proxy package is missing on this system!"
   echo "Installing standard package 'google-cloud-cli-cloud-run-proxy' via apt-get..."
   sudo apt-get update && sudo apt-get install -y google-cloud-cli-cloud-run-proxy
   echo "✔ Component successfully installed!"
