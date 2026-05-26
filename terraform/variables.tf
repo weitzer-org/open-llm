@@ -43,7 +43,7 @@ variable "vpc_subnetwork" {
 variable "active_model_path" {
   type        = string
   description = "Relative path within GCS FUSE mount bucket representing active safetensors weights (e.g. qwen-2.5-7b-instruct)"
-  default     = "qwen-2.5-7b-instruct"
+  default     = "qwen-2.5-7b-instruct-fp8"
 }
 
 variable "gateway_image" {
@@ -61,7 +61,7 @@ variable "vllm_image" {
 variable "max_model_len" {
   type        = number
   description = "vLLM context length window size constraint"
-  default     = 2048
+  default     = 8192
 }
 
 variable "gpu_memory_utilization" {
