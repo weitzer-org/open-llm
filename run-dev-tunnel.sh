@@ -95,14 +95,19 @@ if ! kill -0 "$GATEWAY_PID" 2>/dev/null; then
   exit 1
 fi
 
+# Fetch Fully Qualified Domain Name (FQDN) for corporate direct network routing links
+FQDN=$(hostname -f 2>/dev/null || echo "localhost")
+
 # 3. Print the ready console UI
 echo -e "\n========================================================="
-echo -e "🪐 SECURE DEVELOPER WORKSPACE ONLINE &serving REQUESTS!"
+echo -e "🪐 SECURE DEVELOPER WORKSPACE ONLINE & SERVING REQUESTS!"
 echo -e "========================================================="
 echo -e "🔐 Master Token (Auto-Fetched) : \033[1;32m$API_SECRET\033[0m"
-echo -e "🌐 Local Web Console URL       : \033[1;36mhttp://localhost:$GATEWAY_PORT/\033[0m"
+echo -e "🌐 Corporate Web Console URL   : \033[1;36mhttp://$FQDN:$GATEWAY_PORT/\033[0m"
+echo -e "🌐 Local Loopback Fallback URL  : \033[1;30mhttp://localhost:$GATEWAY_PORT/\033[0m"
 echo -e "🔒 Private GPU service target  : $SERVICE_NAME (internal-only)"
 echo -e "---------------------------------------------------------"
+echo -e "💡 Direct Corporate Access Active! No manual SSH port-forwarding tunnels required."
 echo -e "📝 System logs are being piped to: $TMP_DIR/"
 echo -e "👉 Press \033[1;33m[ENTER]\033[0m or Ctrl+C at any time to safely shut down the tunnel and exit."
 echo -e "========================================================="
