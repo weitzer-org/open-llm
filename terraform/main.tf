@@ -167,14 +167,7 @@ resource "google_storage_bucket_iam_member" "vllm_storage_viewer" {
 # 7. Artifact Registry (Go Gateway Image Store)
 # ========================================================================
 
-resource "google_artifact_registry_repository" "repo" {
-  project       = var.project_id
-  location      = var.region
-  repository_id = "open-llm-repo"
-  format        = "DOCKER"
-  description   = "Open-LLM Docker Registry for CPU Gateway images"
-  depends_on    = [google_project_service.apis["artifactregistry.googleapis.com"]]
-}
+
 
 # ========================================================================
 # 8. Serverless Services Provisioning

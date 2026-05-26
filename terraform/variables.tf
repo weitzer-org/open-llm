@@ -49,7 +49,7 @@ variable "active_model_path" {
 variable "gateway_image" {
   type        = string
   description = "Fully qualified Docker image URI for the Go API Gateway (provided dynamically during CI/CD steps)"
-  default     = "us-central1-docker.pkg.dev/quacktastic-waffle/open-llm-repo/gateway:latest"
+  default     = "us-central1-docker.pkg.dev/quacktastic-waffle/cloud-run-source-deploy/open-llm-gateway:latest"
 }
 
 variable "vllm_image" {

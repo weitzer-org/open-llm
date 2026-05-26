@@ -11,37 +11,26 @@ steps:
     args: ['test', '-v', './...']
     dir: 'gateway'
 
-  # Step 3: Targeted Terraform Apply to bootstrap Artifact Registry
-  # This avoids any bootstrapping chicken-and-egg dependency locks on first runs.
-  - name: 'hashicorp/terraform:1.9.3'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        cd terraform && \
-        terraform init && \
-        terraform apply -target=google_artifact_registry_repository.repo -auto-approve -var="project_id=$PROJECT_ID"
-
-  # Step 4: Build the container image via Cloud Build remote builders
+  # Step 3: Build the container image via Cloud Build remote builders
   # Tagged with the short commit SHA for explicit SLSA and git traceability.
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:$SHORT_SHA'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:latest'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:latest'
       - '-f'
       - 'gateway/Dockerfile'
       - 'gateway'
 
-  # Step 5: Push images to Artifact Registry
+  # Step 4: Push images to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:$SHORT_SHA']
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:latest']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:latest']
 
-  # Step 6: Complete Infrastructure Provisioning & Service Rollout
+  # Step 5: Complete Infrastructure Provisioning & Service Rollout
   # Passes the newly compiled image tag dynamically to variables.
   - name: 'hashicorp/terraform:1.9.3'
     entrypoint: 'sh'
@@ -49,12 +38,12 @@ steps:
       - '-c'
       - |
         cd terraform && \
-        terraform apply -auto-approve -var="project_id=$PROJECT_ID" -var="gateway_image=us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA"
+        terraform apply -auto-approve -var="project_id=$PROJECT_ID" -var="gateway_image=us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:$SHORT_SHA"
 
 # Explicitly register the final build outputs for tracking
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA'
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:latest'
 
 options:
   requestedVerifyOption: VERIFIED
