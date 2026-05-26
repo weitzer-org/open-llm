@@ -49,7 +49,7 @@ func TestE2EGatewayFlow(t *testing.T) {
 	// 2. Setup the Go Gateway Server configuration context parameters
 	authSecret := "e2e-master-gate-key"
 	v1URL, _ := url.Parse(mockvLLM.URL)
-	v1Proxy := createVersionedProxy(v1URL, "v1")
+	v1Proxy := createVersionedProxy(v1URL, "v1", nil)
 	v1ProxyHandler := wrapTelemetryAndProxy(v1Proxy, "v1")
 
 	// Create ServeMux and wrap standard middleware chains matching product main()
