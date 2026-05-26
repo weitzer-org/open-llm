@@ -86,7 +86,10 @@ func TestE2EGatewayFlow(t *testing.T) {
 	// E2E Task B: Verify Auth gates (reject unauthenticated completions calls)
 	// ========================================================================
 	reqUnauth, _ := http.NewRequest("POST", gatewayServer.URL+"/v1/chat/completions", strings.NewReader(`{"model":"active-model"}`))
-	respUnauth, _ := client.Do(reqUnauth)
+	respUnauth, err := client.Do(reqUnauth)
+	if err != nil {
+		t.Fatalf("Failed unauthenticated POST request call: %v", err)
+	}
 	defer respUnauth.Body.Close()
 	if respUnauth.StatusCode != http.StatusUnauthorized {
 		t.Errorf("Expected unauthenticated post request to return 401, got %d", respUnauth.StatusCode)
@@ -97,7 +100,10 @@ func TestE2EGatewayFlow(t *testing.T) {
 	// ========================================================================
 	reqBadToken, _ := http.NewRequest("POST", gatewayServer.URL+"/v1/chat/completions", strings.NewReader(`{"model":"active-model"}`))
 	reqBadToken.Header.Set("Authorization", "Bearer invalid-token-pass-123")
-	respBadToken, _ := client.Do(reqBadToken)
+	respBadToken, err := client.Do(reqBadToken)
+	if err != nil {
+		t.Fatalf("Failed bad token POST request call: %v", err)
+	}
 	defer respBadToken.Body.Close()
 	if respBadToken.StatusCode != http.StatusUnauthorized {
 		t.Errorf("Expected bad token post request to return 401, got %d", respBadToken.StatusCode)
