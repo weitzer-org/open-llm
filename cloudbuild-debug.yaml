@@ -1,6 +1,6 @@
 steps:
   # 1. Run terraform init and plan, capturing all logs to a file in the workspace
-  - name: 'hashicorp/terraform:1.6.0'
+  - name: 'hashicorp/terraform:1.9.3'
     entrypoint: 'sh'
     args:
       - '-c'

@@ -236,7 +236,7 @@ resource "google_cloud_run_v2_service" "vllm" {
     }
 
     node_selector {
-      gpu = "nvidia-l4"
+      accelerator = "nvidia-l4"
     }
 
     scaling {
