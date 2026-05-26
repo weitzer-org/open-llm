@@ -61,7 +61,7 @@ variable "vllm_image" {
 variable "max_model_len" {
   type        = number
   description = "vLLM context length window size constraint"
-  default     = 8192
+  default     = 4096
 }
 
 variable "gpu_memory_utilization" {

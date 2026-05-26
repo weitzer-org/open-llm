@@ -223,8 +223,7 @@ resource "google_cloud_run_v2_service" "vllm" {
         "--max-model-len", tostring(var.max_model_len),
         "--gpu-memory-utilization", tostring(var.gpu_memory_utilization),
         "--disable-log-requests",
-        "--served-model-name", "active-model",
-        "--kv-cache-dtype", "fp8"
+        "--served-model-name", "active-model"
       ]
 
       # startup probe to hold container warm-up during heavy model weights loading (5 mins ceiling)
