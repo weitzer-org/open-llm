@@ -220,7 +220,7 @@ resource "google_cloud_run_v2_service" "vllm" {
       startup_probe {
         timeout_seconds   = 5
         period_seconds    = 10
-        failure_threshold = 30 # 30 attempts * 10s = 300s (5 mins)
+        failure_threshold = 60 # 60 attempts * 10s = 600s (10 mins)
         http_get {
           path = "/health"
           port = 8080
