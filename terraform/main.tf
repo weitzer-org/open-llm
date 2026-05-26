@@ -184,6 +184,10 @@ resource "google_cloud_run_v2_service" "vllm" {
     service_account = google_service_account.vllm_sa.email
     timeout         = "600s" # 10 minutes max connection duration
 
+    annotations = {
+      "run.googleapis.com/gpu-redundancy" = "disabled"
+    }
+
     containers {
       image = var.vllm_image
       
