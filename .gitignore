@@ -18,3 +18,8 @@ terraform.tfvars.json
 # OS metadata files
 .DS_Store
 Thumbs.db
+
+# Scratch artifacts and temporary developer metrics directories
+scratch/
+/tmp/open-llm-dev/
+*.log
