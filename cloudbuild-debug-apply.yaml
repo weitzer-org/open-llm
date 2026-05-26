@@ -14,7 +14,11 @@ steps:
         
         if [ $$INIT_CODE -eq 0 ]; then
           echo "\n=== TERRAFORM TARGETED APPLY ===" >> /workspace/logs/tf_log.txt
-          terraform apply -target=google_cloud_run_v2_service.vllm -auto-approve -var="project_id=quacktastic-waffle" -input=false -no-color >> /workspace/logs/tf_log.txt 2>&1
+          terraform apply \
+            -target=google_cloud_run_v2_service.vllm \
+            -target=google_cloud_run_v2_service_iam_member.vllm_gateway_invoker \
+            -target=google_cloud_run_v2_service_iam_member.vllm_jetski_invoker \
+            -auto-approve -var="project_id=quacktastic-waffle" -input=false -no-color >> /workspace/logs/tf_log.txt 2>&1
           APPLY_CODE=$$?
           echo "Apply Exit Code: $$APPLY_CODE" >> /workspace/logs/tf_log.txt
         else

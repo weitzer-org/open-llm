@@ -185,7 +185,7 @@ resource "google_cloud_run_v2_service" "vllm" {
   project             = var.project_id
   name                = "open-llm-vllm"
   location            = var.region
-  ingress             = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  ingress             = "INGRESS_TRAFFIC_ALL"
   launch_stage        = "BETA"
   deletion_protection = false
   depends_on          = [google_project_service.apis["run.googleapis.com"], google_storage_bucket_iam_member.vllm_storage_viewer]
@@ -256,13 +256,23 @@ resource "google_cloud_run_v2_service" "vllm" {
   }
 }
 
-# Permit unauthenticated invocation inside the VPC (Secured by Internal Ingress)
-resource "google_cloud_run_v2_service_iam_member" "vllm_unauthenticated" {
+# Grant Gateway SA permission to invoke the public vLLM service over private or public routes
+resource "google_cloud_run_v2_service_iam_member" "vllm_gateway_invoker" {
   project    = var.project_id
   location   = var.region
   name       = google_cloud_run_v2_service.vllm.name
   role       = "roles/run.invoker"
-  member     = "allUsers"
+  member     = "serviceAccount:${google_service_account.gateway_sa.email}"
+  depends_on = [google_cloud_run_v2_service.vllm]
+}
+
+# Grant corporate Cloudtop developer SA permission to invoke the public vLLM service for local development loops
+resource "google_cloud_run_v2_service_iam_member" "vllm_jetski_invoker" {
+  project    = var.project_id
+  location   = var.region
+  name       = google_cloud_run_v2_service.vllm.name
+  role       = "roles/run.invoker"
+  member     = "serviceAccount:jetski-secret-accessor@quacktastic-waffle.iam.gserviceaccount.com"
   depends_on = [google_cloud_run_v2_service.vllm]
 }
 
