@@ -350,8 +350,8 @@ func TestAPIVersionRouting(t *testing.T) {
 	v2URL, _ := url.Parse(mockV2.URL)
 
 	// Generate dynamic proxy handlers
-	v1Proxy := wrapTelemetryAndProxy(createVersionedProxy(v1URL, "v1"), "v1")
-	v2Proxy := wrapTelemetryAndProxy(createVersionedProxy(v2URL, "v2"), "v2")
+	v1Proxy := wrapTelemetryAndProxy(createVersionedProxy(v1URL, "v1", nil), "v1")
+	v2Proxy := wrapTelemetryAndProxy(createVersionedProxy(v2URL, "v2", nil), "v2")
 
 	// Build main ServeMux router matching our system mappings
 	mux := http.NewServeMux()

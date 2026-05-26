@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -165,7 +166,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("[GATEWAY-FATAL] Invalid v1 backend URL structure: %v", err)
 	}
-	v1Proxy := createVersionedProxy(v1URL, "v1")
+	
+	var v1TokenCache *TokenCache
+	if strings.HasPrefix(v1URL.Scheme, "https") && !strings.Contains(v1URL.Host, "localhost") && !strings.Contains(v1URL.Host, "127.0.0.1") {
+		v1TokenCache = &TokenCache{audience: v1URL.Scheme + "://" + v1URL.Host}
+	}
+	v1Proxy := createVersionedProxy(v1URL, "v1", v1TokenCache)
 
 	// B. Parse API Version 2 Backend target URL (optional)
 	var v2ProxyHandler http.Handler
@@ -176,7 +182,11 @@ func main() {
 		if err != nil {
 			log.Fatalf("[GATEWAY-FATAL] Invalid v2 backend URL structure: %v", err)
 		}
-		v2ProxyHandler = wrapTelemetryAndProxy(createVersionedProxy(v2URL, "v2"), "v2")
+		var v2TokenCache *TokenCache
+		if strings.HasPrefix(v2URL.Scheme, "https") && !strings.Contains(v2URL.Host, "localhost") && !strings.Contains(v2URL.Host, "127.0.0.1") {
+			v2TokenCache = &TokenCache{audience: v2URL.Scheme + "://" + v2URL.Host}
+		}
+		v2ProxyHandler = wrapTelemetryAndProxy(createVersionedProxy(v2URL, "v2", v2TokenCache), "v2")
 	} else {
 		log.Println("[GATEWAY-INFO] V2 target is unconfigured. Registering automated 501 Not Implemented response gate.")
 		v2ProxyHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -245,7 +255,67 @@ func main() {
 	}
 }
 
-func createVersionedProxy(targetURL *url.URL, versionName string) *httputil.ReverseProxy {
+type TokenCache struct {
+	mu       sync.RWMutex
+	token    string
+	expiry   time.Time
+	audience string
+}
+
+func (c *TokenCache) GetToken() (string, error) {
+	c.mu.RLock()
+	if c.token != "" && time.Now().Before(c.expiry) {
+		token := c.token
+		c.mu.RUnlock()
+		return token, nil
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Double check pattern to avoid race conditions
+	if c.token != "" && time.Now().Before(c.expiry) {
+		return c.token, nil
+	}
+
+	token, err := fetchOIDCToken(c.audience)
+	if err != nil {
+		return "", err
+	}
+
+	c.token = token
+	c.expiry = time.Now().Add(50 * time.Minute) // GCP OIDC ID Token is valid for 1 hour, cache for 50 minutes safely
+	return token, nil
+}
+
+func fetchOIDCToken(audience string) (string, error) {
+	client := &http.Client{Timeout: 5 * time.Second}
+	reqURL := fmt.Sprintf("http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/identity?audience=%s", url.QueryEscape(audience))
+	req, err := http.NewRequest("GET", reqURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Metadata-Flavor", "Google")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("metadata server returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	tokenBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(tokenBytes)), nil
+}
+
+func createVersionedProxy(targetURL *url.URL, versionName string, tokenCache *TokenCache) *httputil.ReverseProxy {
 	return &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			req.URL.Scheme = targetURL.Scheme
@@ -258,6 +328,14 @@ func createVersionedProxy(targetURL *url.URL, versionName string) *httputil.Reve
 			
 			// Clean outgoing credentials for security hygiene
 			req.Header.Del("Authorization")
+			if tokenCache != nil {
+				token, err := tokenCache.GetToken()
+				if err == nil {
+					req.Header.Set("Authorization", "Bearer "+token)
+				} else {
+					log.Printf("[GATEWAY-PROXY-WARN] Failed to retrieve Google OIDC token for audience %s: %v", tokenCache.audience, err)
+				}
+			}
 		},
 		FlushInterval: -1, // Flush chunks immediately to provide real-time streaming experiences (SSE)
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
