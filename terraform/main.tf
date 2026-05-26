@@ -126,8 +126,16 @@ resource "google_secret_manager_secret_iam_member" "gateway_secret_accessor" {
   project   = var.project_id
   secret_id = google_secret_manager_secret.api_auth_secret.secret_id
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.gateway_sa.email}"
 }
+
+# Grant corporate Cloudtop developer SA permission to read this secret for local validation
+resource "google_secret_manager_secret_iam_member" "jetski_secret_accessor" {
+  project   = var.project_id
+  secret_id = google_secret_manager_secret.api_auth_secret.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:jetski-secret-accessor@quacktastic-waffle.iam.gserviceaccount.com"
+}
+
 
 # ========================================================================
 # 6. Storage Infrastructure (GCS Model Zoo Bucket)
