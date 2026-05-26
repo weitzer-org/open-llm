@@ -101,6 +101,11 @@ resource "google_project_iam_member" "cloudbuild_service_agent" {
 # 5. Secret Manager Configuration (API Pre-Shared Key Store)
 # ========================================================================
 
+import {
+  to = google_secret_manager_secret.api_auth_secret
+  id = "projects/quacktastic-waffle/secrets/open-llm-api-auth-secret"
+}
+
 resource "google_secret_manager_secret" "api_auth_secret" {
   project   = var.project_id
   secret_id = "open-llm-api-auth-secret"
