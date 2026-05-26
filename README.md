@@ -175,3 +175,25 @@ If you are working offline or iterating fast on front-end CSS/HTML/JS console fe
    PORT=8080 API_AUTH_SECRET="open-llm-dev-token" DEV_MODE="true" VLLM_API_URL="http://localhost:8000" go run main.go
    ```
 3. Open your browser to `http://localhost:8080/` (or your FQDN link!) and use the pre-filled token `open-llm-dev-token` to start instant, offline sandbox prompting!
+
+---
+
+## 🔮 Future Scalability: Expanding the Context Window (TODO Roadmap)
+
+To expand your model's active context window safely beyond the current **2,048 tokens** memory boundary to support larger document feeds or historical chats (without triggering GPU VRAM Out-of-Memory crashes on the L4 GPU), we have outlined the following structural engineering strategies:
+
+* **[ ] Task 1: Enable AWQ/GPTQ/FP8 Model Quantization (High-Impact)**
+  * **How it works**: Compresses model weights from standard BF16 (16-bit) down to high-performance FP8 (8-bit) or INT4/AWQ (4-bit) representation.
+  * **The Gain**: Drops the raw model parameters footprint from 14GB to **7GB (FP8) or 3.5GB (INT4)** VRAM! This immediately frees up **17GB to 20.5GB** of GPU memory to hold massive self-attention KV Cache pools, letting you scale your context length to **8k or 16k tokens** on the same single L4 GPU!
+
+* **[ ] Task 2: Configure FP8 KV Cache Compressions**
+  * **How it works**: Compresses attention matrices values down to 8-bit precision by appending the vLLM startup parameter `--kv-cache-dtype fp8`.
+  * **The Gain**: Halves the dynamic memory footprint per active sequence block, immediately doubling your model's request concurrency and context handling capacity.
+
+* **[ ] Task 3: Enable Chunked Prefills & FlashAttention-3**
+  * **How it works**: Standard processes map your entire prompt sequence at once, causing heavy memory peaks on large prompts. Enabling chunked prefills (`--enable-chunked-prefill`) chunks and sequences the input workload.
+  * **The Gain**: Smooths dynamic memory allocation surges, preventing OOM spikes on heavy document prompt submissions.
+
+* **[ ] Task 4: Scale Out to Multi-GPU Node Pools (Tensor Parallelism)**
+  * **How it works**: For extreme enterprise requirements (e.g., 32k or 128k context lengths), configure your Terraform templates to scale out execution across multiple GPUs (e.g., set `tensor_parallel_size = 2` L4 GPUs or scale up to a single A100 80GB VRAM node).
+  * **The Gain**: Splits the computational weights workload and KV cache pools across multiple units, opening unlimited scaling routes!
