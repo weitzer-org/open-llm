@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🪐 Open-LLM Gateway Console</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #030712;
+            --bg-surface: #0b0f19;
+            --bg-card: #111827;
+            --border-color: #1f2937;
+            --border-focus: #4f46e5;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-rose: #f87171;
+            --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Ambient background glow */
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.02) 70%, transparent 100%);
+            top: -200px;
+            right: -200px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .ambient-glow-2 {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 80%);
+            bottom: -100px;
+            left: -100px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Container Layout */
+        .app-container {
+            position: relative;
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* Sidebar configuration panel */
+        .sidebar {
+            width: 340px;
+            background-color: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            font-size: 24px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: var(--transition-smooth);
+        }
+
+        .section-card:hover {
+            border-color: #374151;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Input Controls */
+        .input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-label span.value-indicator {
+            color: #818cf8;
+            font-family: 'Fira Code', monospace;
+            font-size: 11px;
+        }
+
+        .text-input {
+            width: 100%;
+            background-color: rgba(3, 7, 18, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .text-input:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        }
+
+        .slider-input {
+            width: 100%;
+            height: 5px;
+            border-radius: 5px;
+            outline: none;
+            background: #1f2937;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #6366f1;
+            transition: var(--transition-smooth);
+        }
+
+        .slider-input::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #8b5cf6;
+        }
+
+        .textarea-input {
+            min-height: 70px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        /* Status & Connection metrics */
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            box-shadow: 0 0 8px transparent;
+        }
+
+        .status-dot.active {
+            background-color: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse-green 2s infinite;
+        }
+
+        .status-dot.pending {
+            background-color: var(--accent-amber);
+            box-shadow: 0 0 10px var(--accent-amber);
+            animation: pulse-yellow 1.5s infinite;
+        }
+
+        .status-dot.error {
+            background-color: var(--accent-rose);
+            box-shadow: 0 0 10px var(--accent-rose);
+        }
+
+        /* Telemetry Cards */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .telemetry-box {
+            background-color: rgba(3, 7, 18, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .telemetry-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .telemetry-val {
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Main Workspace split */
+        .workspace {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: rgba(3, 7, 18, 0.2);
+            backdrop-filter: blur(8px);
+        }
+
+        .workspace-header {
+            height: 70px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            background-color: rgba(11, 15, 25, 0.7);
+        }
+
+        .model-badge {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #818cf8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .model-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #818cf8;
+        }
+
+        /* Message board panel */
+        .chat-board {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .empty-state {
+            margin: auto;
+            max-width: 460px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 40px;
+            opacity: 0.8;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .empty-description {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+
+        /* Chat bubbles spacing and visual styling */
+        .chat-bubble-container {
+            display: flex;
+            width: 100%;
+            gap: 16px;
+        }
+
+        .chat-bubble-container.user {
+            justify-content: flex-end;
+        }
+
+        .chat-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar.user-avatar {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .chat-avatar.assistant-avatar {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 14.5px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .chat-bubble-container.user .chat-bubble {
+            background-color: #1f2937;
+            color: var(--text-primary);
+            border-top-right-radius: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-bubble-container.assistant .chat-bubble {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border-top-left-radius: 2px;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        /* Markdown output custom styling inside chat bubble */
+        .chat-bubble p {
+            margin-bottom: 10px;
+        }
+
+        .chat-bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .chat-bubble ul, .chat-bubble ol {
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .chat-bubble li {
+            margin-bottom: 4px;
+        }
+
+        .chat-bubble strong {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .inline-code {
+            font-family: 'Fira Code', monospace;
+            background-color: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 13px;
+            color: #f43f5e;
+        }
+
+        /* Beautiful Code Blocks with custom header styling */
+        .code-block-wrapper {
+            background-color: #030712;
+            border: 1px solid #1f2937;
+            border-radius: 8px;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 14px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid #1f2937;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 11px;
+            font-family: inherit;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: var(--transition-smooth);
+        }
+
+        .copy-btn:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .code-block-wrapper pre {
+            padding: 14px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #e5e7eb;
+        }
+
+        /* System prompt quick template selectors chips */
+        .preset-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .preset-chip {
+            background-color: rgba(31, 41, 55, 0.5);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .preset-chip:hover {
+            border-color: #818cf8;
+            color: var(--text-primary);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Action bar input area styling */
+        .input-bar-container {
+            padding: 20px 24px 24px 24px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(11, 15, 25, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-field-box {
+            position: relative;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px 14px;
+            transition: var(--transition-smooth);
+        }
+
+        .input-field-box:focus-within {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+        }
+
+        .chat-textarea {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14.5px;
+            min-height: 24px;
+            max-height: 180px;
+            resize: none;
+            line-height: 1.5;
+            padding-right: 12px;
+        }
+
+        .send-button {
+            background: var(--primary-gradient);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .send-button:disabled {
+            background: #1f2937;
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .footer-note {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+
+        .footer-link:hover {
+            color: #818cf8;
+        }
+
+        /* Animated Cold Start Alert card */
+        .cold-start-banner {
+            background: linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.02) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .cold-start-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #fef08a;
+        }
+
+        .cold-start-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-amber);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .cold-start-timer {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        /* Keyframes Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 8px rgba(52, 211, 153, 0.4); opacity: 1; }
+            50% { box-shadow: 0 0 14px rgba(52, 211, 153, 0.8); opacity: 0.7; }
+        }
+        @keyframes pulse-yellow {
+            0%, 100% { box-shadow: 0 0 8px rgba(251, 191, 36, 0.3); opacity: 1; }
+            50% { box-shadow: 0 0 16px rgba(251, 191, 36, 0.7); opacity: 0.6; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow-2"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Configuration Panel -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <span class="logo-icon">🪐</span>
+                <span class="logo-title">Open-LLM Console</span>
+            </div>
+
+            <!-- Pre-Shared Secret Card -->
+            <section class="section-card">
+                <div class="section-title">
+                    <span>Authentication</span>
+                    <div class="status-pill">
+                        <div id="auth-status-dot" class="status-dot"></div>
+                    </div>
+                </div>
+                <div class="input-wrapper">
+                    <label class="input-label" for="api-key-input">Pre-Shared Secret Key</label>
+                    <input type="password" id="api-key-input" class="text-input" placeholder="Enter pre-shared API key..." autocomplete="off">
+                </div>
+            </section>
+
+            <!-- Generation Settings Panel -->
+            <section class="section-card">
+                <div class="section-title">Parameters</div>
+                
+                <div class="input-wrapper">
+                    <label class="input-label" for="temp-slider">
+                        <span>Temperature</span>
+                        <span id="temp-val" class="value-indicator">0.7</span>
+                    </label>
+                    <input type="range" id="temp-slider" class="slider-input" min="0" max="2" step="0.1" value="0.7">
+                </div>
+
+                <div class="input-wrapper">
+                    <label class="input-label" for="topp-slider">
+                        <span>Top-P</span>
+                        <span id="topp-val" class="value-indicator">0.9</span>
+                    </label>
+                    <input type="range" id="topp-slider" class="slider-input" min="0" max="1" step="0.05" value="0.9">
+                </div>
+
+                <div class="input-wrapper">
+                    <label class="input-label" for="tokens-slider">
+                        <span>Max Tokens</span>
+                        <span id="tokens-val" class="value-indicator">2048</span>
+                    </label>
+                    <input type="range" id="tokens-slider" class="slider-input" min="256" max="8192" step="128" value="2048">
+                </div>
+
+                <div class="input-wrapper">
+                    <label class="input-label" for="system-input">System Prompt Override</label>
+                    <textarea id="system-input" class="text-input textarea-input" placeholder="You are a helpful, respectful, and honest assistant..."></textarea>
+                </div>
+                
+                <div class="input-wrapper">
+                    <label class="input-label">Presets Quick Start</label>
+                    <div class="preset-container">
+                        <span class="preset-chip" onclick="applySystemPreset('general')">General</span>
+                        <span class="preset-chip" onclick="applySystemPreset('code')">Code Expert</span>
+                        <span class="preset-chip" onclick="applySystemPreset('json')">JSON Extractor</span>
+                        <span class="preset-chip" onclick="applySystemPreset('summarize')">Summarizer</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Real-Time Performance Telemetry -->
+            <section class="section-card">
+                <div class="section-title">Telemetry Engine</div>
+                <div class="telemetry-grid">
+                    <div class="telemetry-box">
+                        <div class="telemetry-label">TTFT (First Token)</div>
+                        <div id="metric-ttft" class="telemetry-val">---</div>
+                    </div>
+                    <div class="telemetry-box">
+                        <div class="telemetry-label">Duration</div>
+                        <div id="metric-duration" class="telemetry-val">---</div>
+                    </div>
+                    <div class="telemetry-box">
+                        <div class="telemetry-label">Generation Speed</div>
+                        <div id="metric-speed" class="telemetry-val">---</div>
+                    </div>
+                    <div class="telemetry-box">
+                        <div class="telemetry-label">Total Tokens</div>
+                        <div id="metric-tokens" class="telemetry-val">---</div>
+                    </div>
+                </div>
+            </section>
+        </aside>
+
+        <!-- Main Workspace Area -->
+        <main class="workspace">
+            <header class="workspace-header">
+                <div class="model-badge">Active: Scale-to-Zero Inference</div>
+                <div id="connection-status-pill" style="font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                    <span style="display:inline-block; width: 8px; height: 8px; border-radius:50%; background-color: var(--text-muted);"></span> Ready
+                </div>
+            </header>
+
+            <!-- Chat Board (Scrolls message bubbles) -->
+            <div id="chat-board" class="chat-board">
+                <div id="empty-state" class="empty-state">
+                    <div class="empty-icon">☄️</div>
+                    <h3 class="empty-title">Ready to query the local model</h3>
+                    <p class="empty-description">
+                        This environment hosts an open-weights Flash-equivalent model. The first query will trigger a GPU spin up (cold start penalty), after which the system is fully warm and generates in real-time.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Dynamic Cold Start Alert Area -->
+            <div id="cold-start-container" style="padding: 0 24px; display:none;">
+                <div class="cold-start-banner">
+                    <div class="cold-start-content">
+                        <div class="cold-start-spinner"></div>
+                        <span><strong>Awaiting GPU Provisioning</strong> &mdash; Model weights are loading via GCS FUSE mount. Please wait...</span>
+                    </div>
+                    <div id="cold-start-timer-val" class="cold-start-timer">0.0s</div>
+                </div>
+            </div>
+
+            <!-- Prompt Input Bar Footer -->
+            <footer class="input-bar-container">
+                <div class="input-field-box">
+                    <textarea id="chat-input" class="chat-textarea" placeholder="Send a prompt..." rows="1" autocomplete="off"></textarea>
+                    <button id="send-btn" class="send-button" disabled>
+                        <!-- Send arrow icon path -->
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="footer-note">
+                    <span>Double-check configuration parameters and credentials in the sidebar.</span>
+                    <a href="/health" target="_blank" class="footer-link">Gateway Health</a>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // System Prompt Presets Definition
+        const presets = {
+            general: "You are a helpful, respectful, and honest assistant. Answer questions clearly, accurately, and concisely.",
+            code: "You are an expert software systems architect. Write clean, modular, and performant code following best practices. Prioritize standard libraries, safety checks, unit tests, and write descriptive comments where needed.",
+            json: "You are a strict data formatting subagent. Extract and organize metadata or request contents into valid JSON only. Do not wrap the JSON inside markdown markdown fences, and do not write any surrounding narrative or conversational introductory text.",
+            summarize: "You are an expert technical editor. Summarize the provided document or raw server log. Highlight core errors, performance anomalies, execution paths, status counts, and list recommendations clearly with bullet points."
+        };
+
+        // DOM elements cache
+        const apiKeyInput = document.getElementById('api-key-input');
+        const authStatusDot = document.getElementById('auth-status-dot');
+        const tempSlider = document.getElementById('temp-slider');
+        const tempVal = document.getElementById('temp-val');
+        const toppSlider = document.getElementById('topp-slider');
+        const toppVal = document.getElementById('topp-val');
+        const tokensSlider = document.getElementById('tokens-slider');
+        const tokensVal = document.getElementById('tokens-val');
+        const systemInput = document.getElementById('system-input');
+        const chatBoard = document.getElementById('chat-board');
+        const emptyState = document.getElementById('empty-state');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const connectionStatusPill = document.getElementById('connection-status-pill');
+        const coldStartContainer = document.getElementById('cold-start-container');
+        const coldStartTimerVal = document.getElementById('cold-start-timer-val');
+
+        // Metrics elements
+        const metricTTFT = document.getElementById('metric-ttft');
+        const metricDuration = document.getElementById('metric-duration');
+        const metricSpeed = document.getElementById('metric-speed');
+        const metricTokens = document.getElementById('metric-tokens');
+
+        // App State
+        let chatHistory = [];
+        let isGenerating = false;
+
+        // Initialize App State
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load saved secret key
+            const savedKey = localStorage.getItem('open_llm_gateway_key');
+            if (savedKey) {
+                apiKeyInput.value = savedKey;
+                validateKeyStrength(savedKey);
+            } else {
+                updateAuthStatus('missing');
+            }
+
+            // Auto-focus chat input
+            chatInput.focus();
+            
+            // Set default preset
+            applySystemPreset('general');
+        });
+
+        // Key Input changes
+        apiKeyInput.addEventListener('input', (e) => {
+            const key = e.target.value.trim();
+            localStorage.setItem('open_llm_gateway_key', key);
+            validateKeyStrength(key);
+        });
+
+        // Parameters change sync
+        tempSlider.addEventListener('input', (e) => { tempVal.textContent = e.target.value; });
+        toppSlider.addEventListener('input', (e) => { toppVal.textContent = e.target.value; });
+        tokensSlider.addEventListener('input', (e) => { tokensVal.textContent = e.target.value; });
+
+        // Textarea Autogrow and keys submit configuration
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = (chatInput.scrollHeight - 20) + 'px';
+            sendBtn.disabled = !chatInput.value.trim() || isGenerating;
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!sendBtn.disabled) {
+                    submitPrompt();
+                }
+            }
+        });
+
+        sendBtn.addEventListener('click', () => {
+            if (!isGenerating) {
+                submitPrompt();
+            }
+        });
+
+        // Auth status indicator helpers
+        function validateKeyStrength(key) {
+            if (!key) {
+                updateAuthStatus('missing');
+            } else if (key.length < 6) {
+                updateAuthStatus('weak');
+            } else {
+                updateAuthStatus('configured');
+            }
+        }
+
+        function updateAuthStatus(state) {
+            authStatusDot.className = 'status-dot';
+            sendBtn.disabled = !chatInput.value.trim() || isGenerating;
+            
+            if (state === 'missing') {
+                authStatusDot.classList.add('error');
+                authStatusDot.title = 'Pre-shared API secret is missing';
+            } else if (state === 'weak') {
+                authStatusDot.classList.add('pending');
+                authStatusDot.title = 'Secret key is set but very short';
+            } else if (state === 'configured') {
+                authStatusDot.classList.add('active');
+                authStatusDot.title = 'API Secret Configured & Validated';
+            }
+        }
+
+        function applySystemPreset(name) {
+            if (presets[name]) {
+                systemInput.value = presets[name];
+                systemInput.style.height = 'auto';
+                systemInput.style.height = (systemInput.scrollHeight - 20) + 'px';
+            }
+        }
+
+        // Markdown Stateful Parser for beautiful conversational render
+        function formatMarkdownLines(text) {
+            const lines = text.split('\n');
+            let html = '';
+            let inCodeBlock = false;
+            let codeBlockLang = '';
+            let codeBlockLines = [];
+            let inList = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Detect code block boundaries
+                if (line.trim().startsWith('```')) {
+                    if (inCodeBlock) {
+                        // Close code block
+                        inCodeBlock = false;
+                        const codeText = codeBlockLines.join('\n');
+                        html += `<div class="code-block-wrapper">
+                            <div class="code-header">
+                                <span>${codeBlockLang || 'code'}</span>
+                                <button class="copy-btn" onclick="copyCodeText(this)">Copy</button>
+                            </div>
+                            <pre><code class="language-${codeBlockLang}">${escapeHtml(codeText)}</code></pre>
+                        </div>`;
+                        codeBlockLines = [];
+                        codeBlockLang = '';
+                    } else {
+                        // Open code block
+                        inCodeBlock = true;
+                        codeBlockLang = line.trim().slice(3).trim();
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock) {
+                    codeBlockLines.push(line);
+                    continue;
+                }
+
+                // Detect standard markdown lists
+                const listMatch = line.match(/^\s*[-*+]\s+(.+)/);
+                if (listMatch) {
+                    if (!inList) {
+                        inList = true;
+                        html += '<ul>';
+                    }
+                    html += `<li>${parseInlineMarkdown(listMatch[1])}</li>`;
+                    continue;
+                } else if (inList) {
+                    inList = false;
+                    html += '</ul>';
+                }
+
+                // Standard paragraph block
+                if (line.trim() === '') {
+                    html += '<div style="height: 10px;"></div>';
+                } else {
+                    html += `<p>${parseInlineMarkdown(line)}</p>`;
+                }
+            }
+
+            // Cleanup if unclosed lists
+            if (inList) {
+                html += '</ul>';
+            }
+            if (inCodeBlock && codeBlockLines.length > 0) {
+                // If code block is unfinished, render it currently
+                html += `<div class="code-block-wrapper">
+                    <div class="code-header"><span>${codeBlockLang || 'code'} (generating...)</span></div>
+                    <pre><code>${escapeHtml(codeBlockLines.join('\n'))}</code></pre>
+                </div>`;
+            }
+
+            return html;
+        }
+
+        function parseInlineMarkdown(text) {
+            let escaped = escapeHtml(text);
+            // Bold **text**
+            escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            // Inline backticks `code`
+            escaped = escaped.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+            return escaped;
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        function copyCodeText(button) {
+            const code = button.closest('.code-block-wrapper').querySelector('code').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                setTimeout(() => { button.textContent = originalText; }, 2000);
+            });
+        }
+
+        // Add bubbles helper
+        function appendMessage(role, text) {
+            const bubbleId = 'bubble-' + Date.now();
+            const container = document.createElement('div');
+            container.className = `chat-bubble-container ${role}`;
+            container.id = bubbleId;
+
+            const avatar = document.createElement('div');
+            avatar.className = `chat-avatar ${role}-avatar`;
+            avatar.textContent = role === 'user' ? 'U' : 'AI';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.innerHTML = role === 'user' ? `<p>${escapeHtml(text)}</p>` : formatMarkdownLines(text);
+
+            if (role === 'user') {
+                container.appendChild(bubble);
+                container.appendChild(avatar);
+            } else {
+                container.appendChild(avatar);
+                container.appendChild(bubble);
+            }
+
+            chatBoard.appendChild(container);
+            chatBoard.scrollTop = chatBoard.scrollHeight;
+            return bubbleId;
+        }
+
+        function updateMessageContent(bubbleId, text) {
+            const container = document.getElementById(bubbleId);
+            if (container) {
+                const bubble = container.querySelector('.chat-bubble');
+                if (bubble) {
+                    bubble.innerHTML = formatMarkdownLines(text);
+                }
+            }
+            chatBoard.scrollTop = chatBoard.scrollHeight;
+        }
+
+        // Submitting pipeline action
+        async function submitPrompt() {
+            const prompt = chatInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            if (!prompt) return;
+            if (!apiKey) {
+                alert("Please enter the Pre-Shared Secret Key in the sidebar before calling the service.");
+                apiKeyInput.focus();
+                return;
+            }
+
+            // Lock application inputs
+            isGenerating = true;
+            sendBtn.disabled = true;
+            chatInput.disabled = true;
+            
+            // Clear empty state illustration
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+
+            // Append user prompt to dashboard board
+            appendMessage('user', prompt);
+            
+            // Reset input values
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            // Create temporary AI bubble container for stream compilation
+            const aiBubbleId = appendMessage('assistant', '...');
+            
+            // Initialize cold-start alert monitor states
+            let timerInterval = null;
+            let timerSeconds = 0;
+            let isColdStartDetected = false;
+
+            function startColdStartTimer() {
+                isColdStartDetected = true;
+                coldStartContainer.style.display = 'block';
+                timerSeconds = 0;
+                coldStartTimerVal.textContent = '0.0s';
+                
+                connectionStatusPill.innerHTML = '<span style="display:inline-block; width: 8px; height: 8px; border-radius:50%; background-color: var(--accent-amber); box-shadow: 0 0 10px var(--accent-amber); animation: pulse-yellow 1s infinite;"></span> Cold Start Spin Up';
+                
+                timerInterval = setInterval(() => {
+                    timerSeconds += 0.1;
+                    coldStartTimerVal.textContent = timerSeconds.toFixed(1) + 's';
+                }, 100);
+            }
+
+            function stopColdStartTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                coldStartContainer.style.display = 'none';
+                connectionStatusPill.innerHTML = '<span style="display:inline-block; width: 8px; height: 8px; border-radius:50%; background-color: var(--accent-emerald); box-shadow: 0 0 10px var(--accent-emerald);"></span> Generating';
+            }
+
+            // Metrics references
+            let startTime = performance.now();
+            let firstTokenTime = null;
+            let totalTokens = 0;
+            let responseText = '';
+
+            // Setup telemetry panel
+            metricTTFT.textContent = '---';
+            metricDuration.textContent = '---';
+            metricSpeed.textContent = '---';
+            metricTokens.textContent = '---';
+
+            // Safe cold start timer triggers if we wait more than 2 seconds without response
+            const coldStartDetectorTimeout = setTimeout(() => {
+                if (isGenerating && !firstTokenTime) {
+                    startColdStartTimer();
+                }
+            }, 2000);
+
+            try {
+                // Request body preparation matching standard OpenAI REST payloads
+                const systemPrompt = systemInput.value.trim();
+                const temperature = parseFloat(tempSlider.value);
+                const topP = parseFloat(toppSlider.value);
+                const maxTokens = parseInt(tokensSlider.value);
+
+                const messagesPayload = [];
+                if (systemPrompt) {
+                    messagesPayload.push({ role: 'system', content: systemPrompt });
+                }
+                
+                // Add conversation boundaries (or just the simple current conversation context)
+                // For simplicity, we pass the current user prompt. We can also accumulate history:
+                chatHistory.forEach(msg => {
+                    messagesPayload.push({ role: msg.role, content: msg.content });
+                });
+                messagesPayload.push({ role: 'user', content: prompt });
+
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'active-model',
+                        messages: messagesPayload,
+                        temperature: temperature,
+                        top_p: topP,
+                        max_tokens: maxTokens,
+                        stream: true
+                    })
+                });
+
+                clearTimeout(coldStartDetectorTimeout);
+
+                if (!response.ok) {
+                    stopColdStartTimer();
+                    const errJson = await response.json().catch(() => ({}));
+                    const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
+                    throw new Error(errMsg);
+                }
+
+                // Read readable streams for Server-Sent Events
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                
+                stopColdStartTimer();
+                connectionStatusPill.innerHTML = '<span style="display:inline-block; width: 8px; height: 8px; border-radius:50%; background-color: var(--accent-emerald); box-shadow: 0 0 8px var(--accent-emerald); animation: pulse-green 1.5s infinite;"></span> Streaming';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop(); // Hold onto final incomplete item
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed) continue;
+                        if (trimmed === 'data: [DONE]') continue;
+
+                        if (trimmed.startsWith('data: ')) {
+                            // Extract stream json
+                            const jsonStr = trimmed.slice(6);
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                const chunk = data.choices[0]?.delta?.content || '';
+                                if (chunk) {
+                                    if (firstTokenTime === null) {
+                                        firstTokenTime = performance.now();
+                                        const ttft = firstTokenTime - startTime;
+                                        metricTTFT.textContent = Math.round(ttft) + ' ms';
+                                    }
+
+                                    responseText += chunk;
+                                    totalTokens++; // Estimate each SSE data block containing text as 1 token
+                                    
+                                    // Live updates in console bubble
+                                    updateMessageContent(aiBubbleId, responseText);
+                                    
+                                    // Update basic counts
+                                    metricTokens.textContent = totalTokens;
+                                    
+                                    // Calculate live stream speed
+                                    const timeDiffSec = (performance.now() - firstTokenTime) / 1000;
+                                    if (timeDiffSec > 0.1) {
+                                        const speed = totalTokens / timeDiffSec;
+                                        metricSpeed.textContent = speed.toFixed(1) + ' t/s';
+                                    }
+                                }
+                            } catch (err) {
+                                // Non-fatal JSON parse events
+                                console.warn("Could not parse stream event JSON", err, jsonStr);
+                            }
+                        }
+                    }
+                }
+
+                // Finalize metrics
+                const finalDuration = (performance.now() - startTime) / 1000;
+                metricDuration.textContent = finalDuration.toFixed(2) + ' s';
+                
+                const generationTimeSec = (performance.now() - (firstTokenTime || startTime)) / 1000;
+                const finalSpeed = generationTimeSec > 0.05 ? (totalTokens / generationTimeSec) : 0;
+                metricSpeed.textContent = finalSpeed > 0 ? finalSpeed.toFixed(1) + ' t/s' : '---';
+
+                // Save to active chat memory structures
+                chatHistory.push({ role: 'user', content: prompt });
+                chatHistory.push({ role: 'assistant', content: responseText });
+
+            } catch (err) {
+                clearTimeout(coldStartDetectorTimeout);
+                stopColdStartTimer();
+                console.error("Fetch API generation failure", err);
+                
+                // Render error state inside current bubble or status alerts
+                updateMessageContent(aiBubbleId, `❌ **Gateway Stream Error**: ${err.message || err}`);
+                connectionStatusPill.innerHTML = '<span style="display:inline-block; width: 8px; height: 8px; border-radius:50%; background-color: var(--accent-rose); box-shadow: 0 0 10px var(--accent-rose);"></span> Connection Error';
+            } finally {
+                // Unlock input elements
+                isGenerating = false;
+                chatInput.disabled = false;
+                chatInput.focus();
+                
+                // Update buttons
+                chatInput.style.height = 'auto';
+                sendBtn.disabled = !chatInput.value.trim();
+                
+                if (connectionStatusPill.innerHTML.includes('Streaming') || connectionStatusPill.innerHTML.includes('Generating')) {
+                    connectionStatusPill.innerHTML = '<span style="display:inline-block; width: 8px; height: 8px; border-radius:50%; background-color: var(--text-muted);"></span> Ready';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

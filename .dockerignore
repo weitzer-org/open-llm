@@ -1,0 +1,13 @@
+.git
+.github
+terraform
+.terraform
+*.tfstate*
+.terraform.lock.hcl
+gateway/main_test.go
+gateway/gateway
+README.md
+cloudbuild.yaml
+artifacts
+.dockerignore
+.gitignore

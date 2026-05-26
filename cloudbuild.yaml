@@ -1,0 +1,61 @@
+steps:
+  # Step 1: Run Go static code vet checks
+  - name: 'golang:1.22-alpine'
+    entrypoint: 'go'
+    args: ['vet', './...']
+    dir: 'gateway'
+
+  # Step 2: Run Go Unit Tests
+  - name: 'golang:1.22-alpine'
+    entrypoint: 'go'
+    args: ['test', '-v', './...']
+    dir: 'gateway'
+
+  # Step 3: Targeted Terraform Apply to bootstrap Artifact Registry
+  # This avoids any bootstrapping chicken-and-egg dependency locks on first runs.
+  - name: 'hashicorp/terraform:1.6.0'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd terraform && \
+        terraform init && \
+        terraform apply -target=google_artifact_registry_repository.repo -auto-approve -var="project_id=$PROJECT_ID"
+
+  # Step 4: Build the container image via Cloud Build remote builders
+  # Tagged with the short commit SHA for explicit SLSA and git traceability.
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:latest'
+      - '-f'
+      - 'gateway/Dockerfile'
+      - 'gateway'
+
+  # Step 5: Push images to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:latest']
+
+  # Step 6: Complete Infrastructure Provisioning & Service Rollout
+  # Passes the newly compiled image tag dynamically to variables.
+  - name: 'hashicorp/terraform:1.6.0'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd terraform && \
+        terraform apply -auto-approve -var="project_id=$PROJECT_ID" -var="gateway_image=us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA"
+
+# Explicitly register the final build outputs for tracking
+images:
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:$SHORT_SHA'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/open-llm-repo/gateway:latest'
+
+options:
+  requestedVerifyOption: VERIFIED
+  logging: CLOUD_LOGGING_ONLY
