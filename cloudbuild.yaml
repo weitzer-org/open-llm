@@ -38,6 +38,7 @@ steps:
       - '-c'
       - |
         cd terraform && \
+        terraform init && \
         terraform apply -auto-approve -var="project_id=$PROJECT_ID" -var="gateway_image=us-central1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/open-llm-gateway:$SHORT_SHA"
 
 # Explicitly register the final build outputs for tracking
