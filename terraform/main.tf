@@ -180,13 +180,13 @@ resource "google_cloud_run_v2_service" "vllm" {
   launch_stage = "BETA"
   depends_on   = [google_project_service.apis["run.googleapis.com"], google_storage_bucket_iam_member.vllm_storage_viewer]
 
+  annotations = {
+    "run.googleapis.com/gpu-redundancy" = "disabled"
+  }
+
   template {
     service_account = google_service_account.vllm_sa.email
     timeout         = "600s" # 10 minutes max connection duration
-
-    annotations = {
-      "run.googleapis.com/gpu-redundancy" = "disabled"
-    }
 
     containers {
       image = var.vllm_image
