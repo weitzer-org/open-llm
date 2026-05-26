@@ -294,3 +294,63 @@ func TestProxyHandlerAndHostHeaderPipes(t *testing.T) {
 		t.Fatalf("Expected choices in returns, got: %v", respMap)
 	}
 }
+
+func TestAPIVersionRouting(t *testing.T) {
+	// 1. Setup mock V1 and V2 backends
+	mockV1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"choices":[{"message":{"content":"response from v1"}}]}`))
+	}))
+	defer mockV1.Close()
+
+	mockV2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"choices":[{"message":{"content":"response from v2"}}]}`))
+	}))
+	defer mockV2.Close()
+
+	// Parse urls
+	v1URL, _ := url.Parse(mockV1.URL)
+	v2URL, _ := url.Parse(mockV2.URL)
+
+	// Generate dynamic proxy handlers
+	v1Proxy := wrapTelemetryAndProxy(createVersionedProxy(v1URL, "v1"), "v1")
+	v2Proxy := wrapTelemetryAndProxy(createVersionedProxy(v2URL, "v2"), "v2")
+
+	// Build main ServeMux router matching our system mappings
+	mux := http.NewServeMux()
+	mux.Handle("/v1/", AuthMiddleware("gate-key", v1Proxy))
+	mux.Handle("/v2/", AuthMiddleware("gate-key", v2Proxy))
+
+	// A. Test valid V1 path routing
+	reqV1 := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader(`{"model":"active-model"}`))
+	reqV1.Header.Set("Authorization", "Bearer gate-key")
+	wV1 := httptest.NewRecorder()
+	mux.ServeHTTP(wV1, reqV1)
+
+	respV1 := wV1.Result()
+	bodyBytesV1, _ := io.ReadAll(respV1.Body)
+	if respV1.StatusCode != http.StatusOK || !strings.Contains(string(bodyBytesV1), "response from v1") {
+		t.Errorf("Expected V1 path successful route, got status %d body: %s", respV1.StatusCode, string(bodyBytesV1))
+	}
+
+	// B. Test valid V2 path routing
+	reqV2 := httptest.NewRequest("POST", "/v2/chat/completions", strings.NewReader(`{"model":"active-model"}`))
+	reqV2.Header.Set("Authorization", "Bearer gate-key")
+	wV2 := httptest.NewRecorder()
+	mux.ServeHTTP(wV2, reqV2)
+
+	respV2 := wV2.Result()
+	bodyBytesV2, _ := io.ReadAll(respV2.Body)
+	if respV2.StatusCode != http.StatusOK || !strings.Contains(string(bodyBytesV2), "response from v2") {
+		t.Errorf("Expected V2 path successful route, got status %d body: %s", respV2.StatusCode, string(bodyBytesV2))
+	}
+
+	// C. Test unconfigured/invalid version fallback
+	wUnconfigured := httptest.NewRecorder()
+	reqUnconfigured := httptest.NewRequest("POST", "/v3/chat/completions", nil)
+	mux.ServeHTTP(wUnconfigured, reqUnconfigured)
+	if wUnconfigured.Code != http.StatusNotFound {
+		t.Errorf("Expected unregistered version path (v3) to return 404, got %d", wUnconfigured.Code)
+	}
+}
