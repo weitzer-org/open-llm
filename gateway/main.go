@@ -162,7 +162,11 @@ func main() {
 		Director: func(req *http.Request) {
 			req.URL.Scheme = vllmURL.Scheme
 			req.URL.Host = vllmURL.Host
-			req.Host = vllmURL.Host // Crucial override for Cloud Run routing!
+			
+			// Only override req.Host for external routing targets, let local proxies/tunnels handle loopback hosts natively!
+			if !strings.HasPrefix(vllmURL.Host, "localhost") && !strings.HasPrefix(vllmURL.Host, "127.0.0.1") {
+				req.Host = vllmURL.Host
+			}
 			
 			// Clean outgoing credentials for security hygiene
 			req.Header.Del("Authorization")
