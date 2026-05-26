@@ -866,11 +866,15 @@
 
         // Initialize App State
         window.addEventListener('DOMContentLoaded', () => {
-            // Load saved secret key
-            const savedKey = localStorage.getItem('open_llm_gateway_key');
-            if (savedKey) {
+            // Load server-side injected developer key or localStorage key
+            const serverDevKey = "PLACEHOLDER_DEV_KEY";
+            const savedKey = localStorage.getItem('open_llm_gateway_key') || serverDevKey;
+            
+            if (savedKey && savedKey !== "PLACEHOLDER_DEV_KEY") {
                 apiKeyInput.value = savedKey;
                 validateKeyStrength(savedKey);
+                // Save it back to cache so subsequent requests retain the active token
+                localStorage.setItem('open_llm_gateway_key', savedKey);
             } else {
                 updateAuthStatus('missing');
             }

@@ -195,8 +195,18 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
+		
+		responseHTML := indexHTML
+		if os.Getenv("DEV_MODE") == "true" && authSecret != "" {
+			// Safely inject the developer pre-shared key for frictionless local testing
+			responseHTML = bytes.Replace(responseHTML, []byte("PLACEHOLDER_DEV_KEY"), []byte(authSecret), 1)
+		} else {
+			// Clean up placeholder for standard production deployments
+			responseHTML = bytes.Replace(responseHTML, []byte("PLACEHOLDER_DEV_KEY"), []byte(""), 1)
+		}
+		
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Write(indexHTML)
+		w.Write(responseHTML)
 	})
 
 	// Health probes

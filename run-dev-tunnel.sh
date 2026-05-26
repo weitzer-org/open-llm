@@ -78,6 +78,7 @@ echo "🪐 Compiling and launching local Go Gateway on port :$GATEWAY_PORT..."
 # Pass safe writeable locations for Go cache to prevent restricted process blocks
 export PORT="$GATEWAY_PORT"
 export API_AUTH_SECRET="$API_SECRET"
+export DEV_MODE="true"
 export VLLM_API_URL="http://localhost:$TUNNEL_PORT"
 export HOME="/usr/local/google/home/benweitzer/Documents/open-llm/scratch"
 export GOCACHE="/usr/local/google/home/benweitzer/Documents/open-llm/scratch/go-cache"
