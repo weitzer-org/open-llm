@@ -1217,7 +1217,7 @@
                 if (!response.ok) {
                     stopColdStartTimer();
                     const errJson = await response.json().catch(() => ({}));
-                    const errMsg = errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
+                    const errMsg = errJson.message || errJson.error?.message || `HTTP ${response.status} ${response.statusText}`;
                     throw new Error(errMsg);
                 }
 
