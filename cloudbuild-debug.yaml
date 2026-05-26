@@ -1,0 +1,28 @@
+steps:
+  # 1. Run terraform init and plan, capturing all logs to a file in the workspace
+  - name: 'hashicorp/terraform:1.6.0'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        mkdir -p /workspace/logs
+        cd terraform
+        echo "=== TERRAFORM INIT ===" > /workspace/logs/tf_log.txt
+        terraform init -no-color >> /workspace/logs/tf_log.txt 2>&1
+        INIT_CODE=$$?
+        echo "Exit Code: $$INIT_CODE" >> /workspace/logs/tf_log.txt
+        
+        if [ $$INIT_CODE -eq 0 ]; then
+          echo "\n=== TERRAFORM PLAN ===" >> /workspace/logs/tf_log.txt
+          terraform plan -var="project_id=quacktastic-waffle" -no-color >> /workspace/logs/tf_log.txt 2>&1
+          PLAN_CODE=$$?
+          echo "Exit Code: $$PLAN_CODE" >> /workspace/logs/tf_log.txt
+        fi
+
+  # 2. Upload the captured log file to our cloudbuild source bucket
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        gcloud storage cp /workspace/logs/tf_log.txt gs://quacktastic-waffle_cloudbuild/logs/tf_log.txt

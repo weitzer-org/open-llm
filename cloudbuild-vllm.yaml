@@ -1,0 +1,10 @@
+steps:
+  # Targeted deployment step for the vLLM GPU inference backend and dependencies
+  - name: 'hashicorp/terraform:1.9.3'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd terraform && \
+        terraform init && \
+        terraform apply -target=google_cloud_run_v2_service.vllm -auto-approve -var="project_id=$PROJECT_ID"

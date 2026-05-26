@@ -13,7 +13,7 @@ steps:
 
   # Step 3: Targeted Terraform Apply to bootstrap Artifact Registry
   # This avoids any bootstrapping chicken-and-egg dependency locks on first runs.
-  - name: 'hashicorp/terraform:1.6.0'
+  - name: 'hashicorp/terraform:1.9.3'
     entrypoint: 'sh'
     args:
       - '-c'
@@ -43,7 +43,7 @@ steps:
 
   # Step 6: Complete Infrastructure Provisioning & Service Rollout
   # Passes the newly compiled image tag dynamically to variables.
-  - name: 'hashicorp/terraform:1.6.0'
+  - name: 'hashicorp/terraform:1.9.3'
     entrypoint: 'sh'
     args:
       - '-c'

@@ -1,6 +1,6 @@
 # ========================================================================
-2# 🪐 OPEN-LLM GATEWAY & INFERENCE INFRASTRUCTURE PROVISIONING
-3# ========================================================================
+# 🪐 OPEN-LLM GATEWAY & INFERENCE INFRASTRUCTURE PROVISIONING
+# ========================================================================
 
 # 1. State Backend Settings (using regional tf-state GCS bucket)
 terraform {

@@ -1,0 +1,10 @@
+steps:
+  # speculative plan step to review infra changes safely in the remote environment
+  - name: 'hashicorp/terraform:1.9.3'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        cd terraform && \
+        terraform init && \
+        terraform plan -var="project_id=$PROJECT_ID"
